@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<head>
+<title>Kepler</title>
+<style>
+
+h1 {
+	font-family: Georgia;
+	font-size: 18px;
+	color: darkred;
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+.izquierda {
+	width: 250px;
+	vertical-align: top;
+}
+
+.centro {
+	width: 250px;
+	vertical-align: top;
+}
+
+.derecha {
+	width: 600px;
+	vertical-align: top;
+}
+
+.comenta {
+	font-family: Cambria;
+	font-size: 16px;
+}
+
+.texto {
+	font-family: Cambria;
+	font-size: 14px;
+	width: 180px;
+}
+
+.numero {
+	font-family: Cambria;
+	font-size: 14px;
+	width: 100px;
+	text-align: right;
+}
+
+.fecha {
+	font-family: Cambria;
+	font-size: 14px;
+	width: 140px;
+}
+ 
+.control {
+	font-family: Georgia;
+	font-size: 18px;
+	font-weight: bold;
+	background-color: orange;
+	width: 110px;
+	height: 35px;
+}
+
+.salida {
+	font-family: Cambria;
+	font-size: 14px;
+}
+
+</style>
+<script>
+
+var Pi2 = 2 * 3.141592651;
+var Milisegundos = 86400000;
+
+var Ancho = 600;
+var Alto = 400;
+var Factor = 10;
+
+function Kepler() {
+	// Obtener los valores de entrada.
+	var Periodo = eval(document.getElementById('periodo').value);
+	var Excentricidad = eval(document.getElementById('excentricidad').value);
+	var FechaPerihelio = new Date(document.getElementById('fechaperihelio').value);
+	var FechaCalculo = new Date(document.getElementById('fechacalculo').value);
+	// Obtener los datos orbitales primarios.
+	var SemiejeMayor = Math.pow(Math.pow(Periodo,2),0.33333);
+	var DistanciaFocal = SemiejeMayor * Excentricidad;
+	var SemiejeMenor = Math.sqrt(SemiejeMayor * SemiejeMayor - DistanciaFocal * DistanciaFocal);
+	var DistanciaPerihelio = SemiejeMayor - DistanciaFocal;
+	var DistanciaAfelio = SemiejeMayor + DistanciaFocal;
+	// Obtener la cantidad de días transcurridos.
+	var Dias = parseInt((FechaCalculo - FechaPerihelio) / Milisegundos);
+	// Obtener el porcentaje orbital.
+	var Porcentaje = (Dias / (Periodo * 365.25)) * 100;
+	// Obtener la anomalía media.
+	var AnomaliaMedia = (Dias / (Periodo * 365.25)) * Pi2;
+	// Obtener la anomalía excéntrica.
+	var AnomaliaExcentrica = AnomaliaMedia + Excentricidad * Math.sin(AnomaliaMedia);
+	var Auxiliar;
+	while (AnomaliaExcentrica / Auxiliar <= 0.0001) {
+		Auxiliar = AnomaliaMedia + Excentricidad * Math.sin(AnomaliaExcentrica);
+		AnomaliaExcentrica = Auxiliar;
+	}
+	// Obtener la anomalía verdadera.
+	var AnomaliaVerdadera = Math.sqrt((1 + Excentricidad) / (1 - Excentricidad));
+	AnomaliaVerdadera = AnomaliaVerdadera * Math.tan(AnomaliaExcentrica / 2);
+	AnomaliaVerdadera = Math.atan(AnomaliaVerdadera) * 2;
+	// Obtener el radio vector.
+	var RadioVector = SemiejeMayor * (1 - Excentricidad * Math.cos(AnomaliaExcentrica));
+	// Obtener las posiciones x e y del cuerpo.
+	var PosicionX = RadioVector * Math.cos(AnomaliaVerdadera);
+	var PosicionY = RadioVector * Math.sin(AnomaliaVerdadera);
+	// Generar el resultado.
+	var Muestra = '<p><b>Datos orbitales primarios</b><br/>';
+	Muestra = Muestra + 'Semieje Mayor: ' + Redondeo(SemiejeMayor,3) + ' ua.<br/>';
+	Muestra = Muestra + 'Semieje Menor: ' + Redondeo(SemiejeMenor,3) + ' ua.<br/>';
+	Muestra = Muestra + 'Distancia Focal: ' + Redondeo(DistanciaFocal,3) + ' ua.<br/>';
+	Muestra = Muestra + 'Periehelio: ' + Redondeo(DistanciaPerihelio,3) + ' ua.<br/>';
+	Muestra = Muestra + 'Afelio: ' + Redondeo(DistanciaAfelio,3) + ' ua.</p>';
+	Muestra = Muestra + '<p><b>Datos orbitales secundarios</b><br/>';
+	Muestra = Muestra + 'Dias: ' + Dias + '<br/>';
+	Muestra = Muestra + 'Porcentaje: ' + Redondeo(Porcentaje,2) + ' %<br/>';
+	Muestra = Muestra + 'Anomalia Media: ' + Redondeo(AnomaliaMedia,5) + ' rad.<br/>';
+	Muestra = Muestra + 'Anomalia Excentrica: ' + Redondeo(AnomaliaExcentrica,5) + ' rad.<br/>';
+	Muestra = Muestra + 'Anomalia Verdadera: ' + Redondeo(AnomaliaVerdadera,5) + ' rad.<br/>';
+	Muestra = Muestra + 'Radio Vector: ' + Redondeo(RadioVector,3) + ' ua.<br/>';
+	Muestra = Muestra + 'Posicion X: ' + Redondeo(PosicionX,3) + ' ua.<br/>';
+	Muestra = Muestra + 'Posicion Y: ' + Redondeo(PosicionY,3) + ' ua.</p>';
+	// Generar el gráfico.
+	var CentroX = Ancho / 2;
+	var CentroY = Alto / 2;
+	var OrbitaX = SemiejeMayor * Factor;
+	var OrbitaY = SemiejeMenor * Factor;
+	var SolX = CentroX + (DistanciaFocal * Factor);
+	var SolY = CentroY;
+	var ObjetoX = SolX + (PosicionX * Factor);
+	var ObjetoY = SolY - (PosicionY * Factor);
+	var Grafico = '<svg width=' + Ancho + ' height=' + Alto + '>';
+	Grafico = Grafico + '<rect x=0 y=0 width=' + Ancho + ' height=' + Alto + ' fill=#000 />';
+	Grafico = Grafico + '<ellipse cx=' + CentroX + ' cy=' + CentroY + ' rx=' + OrbitaX + ' ry=' + OrbitaY + ' stroke=#666 />';
+	Grafico = Grafico + '<circle cx=' + SolX + ' cy=' + SolY + ' r=5 fill=#ff0 />';
+	Grafico = Grafico + '<circle cx=' + ObjetoX + ' cy=' + ObjetoY + ' r=3 fill=#0f0 />';
+	Grafico = Grafico + '</svg>';
+	// Muestra los resultados y el gráfico.
+	document.getElementById('muestra').innerHTML = Muestra;
+	document.getElementById('grafico').innerHTML = Grafico;
+}
+
+function Redondeo(NN,DD) {
+	var Potencia = Math.pow(10,DD);
+	var Resultado = parseInt(NN * Potencia);
+	var Resultado = Resultado / Potencia;
+	return Resultado;
+}
+
+</script>
+</head>
+<body>
+<h1>Leyes de Kepler</h1>
+<table>
+<tr>
+<td class="izquierda">
+<p class="comenta">Cuerpo:<br/><input type="text" class="texto" id="cuerpo" /></p>
+<p class="comenta">Periodo:<br/><input type="text" class="numero" id="periodo" />&nbsp;as.</p>
+<p class="comenta">Excentricidad:<br/><input type="text" class="numero" id="excentricidad" /></p>
+<p class="comenta">Fecha de perihelio:<br/><input type="date" class="fecha" id="fechaperihelio" /></p>
+<p class="comenta">Fecha de calculo:<br/><input type="date" class="fecha" id="fechacalculo" /></p>
+<p><button class="control" onclick="Kepler()">Obtener</button></p>
+</td>
+<td class="centro">
+<div class="salida" id="muestra"></div>
+</td>
+<td class="derecha">
+<div class="salida" id="grafico"></div>
+</td>
+</tr>
+</table>
+</body>
+</html>
